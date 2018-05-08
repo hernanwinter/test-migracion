@@ -16,8 +16,7 @@ struct TagStadistics{
 };
 
 struct TagStadistics* tag_occurrences;
-
-struct TagStadistics print_entity (char** tokens, const mitie_named_entity_detections* dets, unsigned long i, struct TagStadistics* tag_occurrences, int* cant_tags);
+struct TagStadistics print_entity (char** tokens, const mitie_named_entity_detections* dets, unsigned long i, int* cant_tags);
 
 // ----------------------------------------------------------------------------------------
 
@@ -30,11 +29,10 @@ int main(int argc, char** argv)
     unsigned long i = 0;
     char** tokens = 0;
     int return_code = EXIT_FAILURE;
-    int* cant_tags = 1;
+    int* cant_tags;
 
     struct TagStadistics tags_info[4];
     struct TagStadistics current_tag;
-    struct TagStadistics* tag_occurrences;
 
     if (argc != 3)
     {
@@ -79,11 +77,15 @@ int main(int argc, char** argv)
     num_dets = mitie_ner_get_num_detections(dets);
     tag_occurrences = malloc(1 * sizeof(struct TagStadistics));
     tag_occurrences[0].cant = 0;
+    tag_occurrences[0].tag_text = malloc( 8 * sizeof(char *) );
+    strcpy(tag_occurrences[0].tag_text, " ");
 
+    cant_tags = malloc(1 * sizeof(int));
+    *cant_tags = 1;
     printf("\nNumber of named entities detected: %lu\n", num_dets);
     for (i = 0; i < num_dets; ++i)
     {
-        current_tag = print_entity(tokens, dets, i, tag_occurrences, cant_tags);
+        current_tag = print_entity(tokens, dets, i, cant_tags);
         printf("%lu\n", tag_occurrences[0].cant);
 
         if (strcmp(current_tag.tag_name, tags_info[0].tag_name) == 0) {
@@ -136,7 +138,6 @@ struct TagStadistics print_entity (
     char** tokens,
     const mitie_named_entity_detections* dets,
     unsigned long i,
-    struct TagStadistics* tag_occurrences,
     int* cant_tags
 )
 {
@@ -147,6 +148,7 @@ struct TagStadistics print_entity (
     char* dummy_text;
     unsigned long j = 0;
     int found = 0;
+    struct TagStadistics* tmp;
 
     pos = mitie_ner_get_detection_position(dets, i);
     len = mitie_ner_get_detection_length(dets, i);
@@ -160,7 +162,6 @@ struct TagStadistics print_entity (
     while(len > 0)
     {
     	strcat(tag.tag_text, tokens[pos]);
-    	strcat(tag.tag_text, " ");
         pos++;
         --len;
     }
@@ -181,13 +182,20 @@ struct TagStadistics print_entity (
     		strcat(tag_occurrences[0].tag_text, tag.tag_text);
     		tag_occurrences[0].cant++;
     	} else {
-	    	realloc(tag_occurrences, (*cant_tags + 1) * sizeof(struct TagStadistics));
-	    	*cant_tags++;
-	    	tag_occurrences[*cant_tags - 1].cant = 1;
-	    	tag_occurrences[*cant_tags - 1].tag_name = tag_type;
-	    	tag_occurrences[*cant_tags - 1].tag_text = malloc( len * 8 * sizeof(char *) );
-			strcpy(tag_occurrences[*cant_tags - 1].tag_text, " ");
-	    	strcat(tag_occurrences[*cant_tags - 1].tag_text, tag.tag_text);
+	    	tmp = realloc(tag_occurrences, ((*cant_tags) + 1) * sizeof(struct TagStadistics));
+            if (tmp != NULL) {
+                tag_occurrences = tmp;
+                tmp = NULL;
+    	    	(*cant_tags)++;
+    	    	tag_occurrences[(*cant_tags) - 1].cant = 1;
+    	    	tag_occurrences[(*cant_tags) - 1].tag_name = tag_type;
+                tag_occurrences[(*cant_tags) - 1].tag_text = tag.tag_text;
+            } else {
+                printf("Error realloc");
+            }
+	    	//tag_occurrences[(*cant_tags) - 1].tag_text = malloc( len * 8 * sizeof(char *) );
+			//strcpy(tag_occurrences[(*cant_tags) - 1].tag_text, " ");
+	     	//strcat(tag_occurrences[(*cant_tags) - 1].tag_text, tag.tag_text);
 	    }
     }
 
