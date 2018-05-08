@@ -17,6 +17,7 @@ struct TagStadistics{
 
 struct TagStadistics* tag_occurrences;
 struct TagStadistics print_entity (char** tokens, const mitie_named_entity_detections* dets, unsigned long i, int* cant_tags);
+struct TagStadistics find_best_tags(int cant);
 
 // ----------------------------------------------------------------------------------------
 
@@ -33,6 +34,7 @@ int main(int argc, char** argv)
 
     struct TagStadistics tags_info[4];
     struct TagStadistics current_tag;
+    struct TagStadistics best_tags;
 
     if (argc != 3)
     {
@@ -86,41 +88,10 @@ int main(int argc, char** argv)
     for (i = 0; i < num_dets; ++i)
     {
         current_tag = print_entity(tokens, dets, i, cant_tags);
-        printf("%lu\n", tag_occurrences[0].cant);
-
-        if (strcmp(current_tag.tag_name, tags_info[0].tag_name) == 0) {
-        	if (tags_info[0].best_score < current_tag.best_score) {
-        		tags_info[0].best_score = current_tag.best_score;
-        		tags_info[0].tag_text = current_tag.tag_text;
-        	}
-        } else {
-        	if (strcmp(current_tag.tag_name, tags_info[1].tag_name) == 0) {
-	        	if (tags_info[1].best_score < current_tag.best_score) {
-	        		tags_info[1].best_score = current_tag.best_score;
-	        		tags_info[1].tag_text = current_tag.tag_text;
-	        	}
-        	} else {
-        		if (strcmp(current_tag.tag_name, tags_info[2].tag_name) == 0) {
-		        	if (tags_info[2].best_score < current_tag.best_score) {
-		        		tags_info[2].best_score = current_tag.best_score;
-		        		tags_info[2].tag_text = current_tag.tag_text;
-		        	}
-        		} else {
-        			if (strcmp(current_tag.tag_name, tags_info[3].tag_name) == 0) {
-			        	if (tags_info[3].best_score < current_tag.best_score) {
-			        		tags_info[3].best_score = current_tag.best_score;
-			        		tags_info[3].tag_text = current_tag.tag_text;
-			        	}
-        			}
-        		}
-        	}
-        }
     }
-
-    printf("Tag %s: Score: %0.3f: %s\n", tags_info[0].tag_text, tags_info[0].best_score, tags_info[0].tag_name);
-    printf("Tag %s: Score: %0.3f: %s\n", tags_info[1].tag_text, tags_info[1].best_score, tags_info[1].tag_name);
-    printf("Tag %s: Score: %0.3f: %s\n", tags_info[2].tag_text, tags_info[2].best_score, tags_info[2].tag_name);
-    printf("Tag %s: Score: %0.3f: %s\n", tags_info[3].tag_text, tags_info[3].best_score, tags_info[3].tag_name);
+    printf("%d\n", *cant_tags);
+    best_tags = find_best_tags(*cant_tags);
+    printf("%s\n", best_tags.tag_text);
 
 
     return_code = EXIT_SUCCESS;
@@ -170,6 +141,7 @@ struct TagStadistics print_entity (
     	if (strcmp(tag_occurrences[j].tag_text, tag.tag_text) == 0) {
     		tag_occurrences[j].cant++;
     		found = 1;
+            printf("Found --> %s - %ld\n", tag_occurrences[j].tag_text, tag_occurrences[j].cant);
     	}
     	j++;
     }
@@ -181,6 +153,7 @@ struct TagStadistics print_entity (
     		strcpy(tag_occurrences[0].tag_text, " ");
     		strcat(tag_occurrences[0].tag_text, tag.tag_text);
     		tag_occurrences[0].cant++;
+            printf("Not Found --> %s - %ld\n", tag_occurrences[0].tag_text, tag_occurrences[0].cant);
     	} else {
 	    	tmp = realloc(tag_occurrences, ((*cant_tags) + 1) * sizeof(struct TagStadistics));
             if (tmp != NULL) {
@@ -190,6 +163,7 @@ struct TagStadistics print_entity (
     	    	tag_occurrences[(*cant_tags) - 1].cant = 1;
     	    	tag_occurrences[(*cant_tags) - 1].tag_name = tag_type;
                 tag_occurrences[(*cant_tags) - 1].tag_text = tag.tag_text;
+                printf("Not Found --> %s - %ld\n", tag_occurrences[(*cant_tags) - 1].tag_text, tag_occurrences[(*cant_tags) - 1].cant);
             } else {
                 printf("Error realloc");
             }
@@ -202,9 +176,23 @@ struct TagStadistics print_entity (
     tag.tag_name = tag_type;
     tag.best_score = score;
     printf("%s\n", tag.tag_text);
-    tag_occurrences[0].cant ++;
 
     return tag;
+}
+
+struct TagStadistics find_best_tags(int cant) {
+    int i;
+    struct TagStadistics best;
+
+    for(i = 0; i < cant; i++) {
+        if((i == 0) || (tag_occurrences[i].cant > best.cant)){
+            best.tag_text = tag_occurrences[i].tag_text;
+            best.tag_name = tag_occurrences[i].tag_name;
+            best.cant = tag_occurrences[i].cant;
+        }
+    }
+
+    return best;
 }
 
 // ----------------------------------------------------------------------------------------
