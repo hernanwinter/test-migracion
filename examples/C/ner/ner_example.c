@@ -17,7 +17,7 @@ struct TagStadistics{
 
 struct TagStadistics* tag_occurrences;
 struct TagStadistics print_entity (char** tokens, const mitie_named_entity_detections* dets, unsigned long i, int* cant_tags);
-struct TagStadistics find_best_tags(int cant);
+struct TagStadistics* find_best_tags(int cant);
 
 // ----------------------------------------------------------------------------------------
 
@@ -34,7 +34,7 @@ int main(int argc, char** argv)
 
     struct TagStadistics tags_info[4];
     struct TagStadistics current_tag;
-    struct TagStadistics best_tags;
+    struct TagStadistics* best_tags;
 
     if (argc != 3)
     {
@@ -91,7 +91,9 @@ int main(int argc, char** argv)
     }
     printf("%d\n", *cant_tags);
     best_tags = find_best_tags(*cant_tags);
-    printf("%s\n", best_tags.tag_text);
+
+    //printf("%s\n", (*best_tags).tag_text);
+    //printf("%s\n", (*(best_tags + 1)).tag_text);
 
 
     return_code = EXIT_SUCCESS;
@@ -180,18 +182,40 @@ struct TagStadistics print_entity (
     return tag;
 }
 
-struct TagStadistics find_best_tags(int cant) {
+struct TagStadistics* find_best_tags(int cant) {
     int i;
-    struct TagStadistics best;
+    struct TagStadistics best_person;
+    struct TagStadistics best_location;
+    struct TagStadistics best[4];
 
     for(i = 0; i < cant; i++) {
-        if((i == 0) || (tag_occurrences[i].cant > best.cant)){
-            best.tag_text = tag_occurrences[i].tag_text;
-            best.tag_name = tag_occurrences[i].tag_name;
-            best.cant = tag_occurrences[i].cant;
+        if((best[0].cant == 0) && (strcmp(tag_occurrences[i].tag_name, "PERSON") == 0)) {
+            best[0].tag_text = malloc(strlen(tag_occurrences[i].tag_text) * sizeof(char*));
+            strcpy(best[0].tag_text, tag_occurrences[i].tag_text);
+            best[0].cant = tag_occurrences[i].cant;
+        } else {
+            if((best[1].cant == 0) && (strcmp(tag_occurrences[i].tag_name, "LOCATION") == 0)) {
+                best[1].tag_text = malloc(strlen(tag_occurrences[i].tag_text) * sizeof(char*));
+                strcpy(best[1].tag_text, tag_occurrences[i].tag_text);
+                best[1].cant = tag_occurrences[i].cant;
+            } else {
+                if ((best[0].cant != 0) && (strcmp(tag_occurrences[i].tag_name, "PERSON") == 0) && (tag_occurrences[i].cant > best_person.cant)) {
+                    best[0].tag_text = malloc(strlen(tag_occurrences[i].tag_text) * sizeof(char*));
+                    strcpy(best[0].tag_text, tag_occurrences[i].tag_text);
+                    best[0].cant = tag_occurrences[i].cant;
+                } else {
+                    if ((best[1].cant != 0) && (strcmp(tag_occurrences[i].tag_name, "LOCATION") == 0) && (tag_occurrences[i].cant > best_location.cant)) {
+                        best[1].tag_text = malloc(strlen(tag_occurrences[i].tag_text) * sizeof(char*));
+                        strcpy(best[1].tag_text, tag_occurrences[i].tag_text);
+                        best[1].cant = tag_occurrences[i].cant;
+                    }
+                }
+            }
         }
     }
 
+    printf("%s\n", best[0].tag_text);
+    printf("%s\n", best[1].tag_text);
     return best;
 }
 
