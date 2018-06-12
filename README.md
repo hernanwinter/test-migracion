@@ -1,4 +1,4 @@
-MITIE: MIT Information Extraction
+wwMITIE: MIT Information Extraction
 =====
 
 This project provides free (even for commercial use)
